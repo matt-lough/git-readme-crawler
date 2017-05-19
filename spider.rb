@@ -89,6 +89,13 @@ def spellcheck_repo(repo)
   p invalid_words
 end
 
+def search_repos(query='ruby')
+  response = RestClient.get(API_URL+"/search/repositories?q=topic:#{query}+pushed:>2016")
+  repos = JSON.parse(response)
+  repos['items']
+end
+
+
 def get_public_repos_page(next_link='')
   if next_link == ''
     response = RestClient.get(API_URL+'/repositories')
@@ -161,13 +168,19 @@ def learn_repos(repos_ary)
   end
 end
 
-settings = CLI.new do
+@settings = CLI.new do
   switch :learn, :description => 'learning mode'
+  option :skip, :description => 'number of repos to skip during learning', :default => 0
+  option :query, :description => 'query to search', :default => 'ruby'
 end.parse!
 
-repos = get_repos
+#repos = get_repos
+repos = search_repos(@settings.query)
 
-if settings.learn
+if @settings.learn
+  if @settings.skip.to_i > 0
+    repos = repos[@settings.skip.to_i..-1]
+  end
   learn_repos(repos)
 else
   spellcheck_repos(repos)
